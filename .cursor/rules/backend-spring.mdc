@@ -1,0 +1,343 @@
+---
+description: 
+alwaysApply: true
+---
+
+---
+description: Reglas estrictas para migrar sistema desktop JavaFX a Spring Boot con MySQL. Define stack técnico, estructura de paquetes, convenciones de nombres, lógica de negocio crítica (FolioService, ReciboService), seguridad RBAC con JWT y buenas prácticas.
+alwaysApply: false
+globs: **/*.java
+---
+## CONTEXTO DEL PROYECTO
+
+Estás ayudando a migrar un sistema desktop JavaFX a una REST API con Spring Boot 4.
+El desarrollador tiene nivel básico-intermedio en Spring Boot y quiere aprender mientras desarrolla.
+La base de datos MySQL preexiste y tiene lógica de negocio documentada que DEBE respetarse exactamente.
+
+---
+
+## STACK TÉCNICO OBLIGATORIO
+
+- Java 17+ (preferir 21)
+- Spring Boot 4.x
+- Spring Data JPA + Hibernate
+- Spring Security 6 + JWT (jjwt o nimbus-jose-jwt)
+- MySQL 8.0 (driver: mysql-connector-j)
+- Maven
+- Lombok (para reducir boilerplate en entidades y DTOs)
+- Apache POI (para generación de Excel)
+- Springdoc OpenAPI (Swagger UI para documentar y probar la API)
+
+---
+
+## ESTRUCTURA DE PAQUETES OBLIGATORIA
+
+Todos los archivos van bajo `isa.jima.ventas`:
+
+```
+isa.jima.ventas
+├── config/          # Configuración: SecurityConfig, CorsConfig, JwtConfig
+├── security/        # JwtUtil, JwtFilter, UserDetailsServiceImpl
+├── controller/      # REST controllers (@RestController)
+├── service/         # Lógica de negocio (@Service)
+├── repository/      # Interfaces JPA (@Repository)
+├── entity/          # Entidades JPA (@Entity)
+├── dto/             # DTOs de request y response
+│   ├── request/     # Lo que entra (ClienteRequest, OrdenRequest...)
+│   └── response/    # Lo que sale (ClienteResponse, OrdenResponse...)
+├── mapper/          # Conversores Entity ↔ DTO (mappers manuales, no MapStruct)
+├── exception/       # Excepciones personalizadas y GlobalExceptionHandler
+└── util/            # FolioService, ExcelExporter, Validador
+```
+
+---
+
+## CONVENCIONES DE NOMENCLATURA
+
+### Entidades
+
+- Nombre simple sin sufijo: `Cliente`, `Orden`, `Recibo`, `GastoFijo`
+- Anotación obligatoria: `@Entity`, `@Table(name = "nombre_tabla_bd")`
+- La entidad `Gasto.java` del proyecto original mapea a la tabla `gastos_diarios`
+→ En la migración renombrar a `GastoDiario` con `@Table(name = "gastos_diarios")`
+- `ZonaEjidal` → en BD sigue siendo `zona_ejidal` pero puede renombrarse a `Localidad`
+- `SubtipoTerreno` → en BD puede renombrarse a `terreno`
+
+### Controllers
+
+- Nombre: `ClienteController`, `OrdenController`, `ReciboController`
+- Siempre `@RestController` + `@RequestMapping("/api/v1/clientes")`
+- Plural y kebab-case para las rutas: `/api/v1/tipos-servicio`, `/api/v1/gastos-fijos`
+
+### Services
+
+- Nombre: `ClienteService`, `OrdenService`, `ReciboService`
+- Siempre `@Service` + `@Transactional` a nivel de clase (override en métodos de solo lectura con `@Transactional(readOnly = true)`)
+
+### Repositories
+
+- Nombre: `ClienteRepository`, `OrdenRepository`
+- Siempre extienden `JpaRepository<Entidad, TipoPK>`
+
+### DTOs
+
+- Request: `ClienteRequest`, `OrdenRequest`, `ReciboRequest`
+- Response: `ClienteResponse`, `OrdenResponse`, `ReciboResponse`
+- Usar `record` de Java para DTOs inmutables cuando sea posible
+
+---
+
+## REGLAS DE CÓDIGO
+
+### Entidades JPA
+
+```java
+// CORRECTO
+@Entity
+@Table(name = "clientes")
+@Getter @Setter @NoArgsConstructor // Lombok
+public class Cliente {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_clientes")
+    private Integer id;
+    // ...
+}
+
+// Los campos STORED de gasto_fijo son de solo lectura desde Java
+@Column(name = "ahorro", insertable = false, updatable = false)
+private BigDecimal ahorro;
+```
+
+### Manejo de dinero
+
+- SIEMPRE usar `BigDecimal` para campos monetarios (`monto_total`, `saldo_restante`, etc.)
+- NUNCA usar `double` o `float` para dinero
+- Para cálculos: `RoundingMode.HALF_UP` con escala 2
+
+### Manejo de booleanos de MySQL
+
+- Los campos `bit(1)` y `tinyint(1)` de MySQL mapean a `Boolean` en Java
+- Anotación: `@Column(name = "tiene_comision", columnDefinition = "tinyint(1)")`
+
+### Inyección de dependencias
+
+- SIEMPRE inyección por constructor (no `@Autowired` en campo)
+- Usar `@RequiredArgsConstructor` de Lombok para simplificar
+
+### Respuestas HTTP
+
+```java
+// Éxito con datos → 200 OK
+return ResponseEntity.ok(response);
+
+// Creación exitosa → 201 Created
+return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+// No encontrado → 404
+throw new ResourceNotFoundException("Cliente no encontrado con id: " + id);
+
+// Error de negocio → 400 Bad Request
+throw new BusinessException("El folio ya existe");
+```
+
+### Manejo global de excepciones
+
+- Siempre tener `GlobalExceptionHandler` con `@RestControllerAdvice`
+- Crear `ErrorResponse` record con: `timestamp`, `status`, `error`, `message`, `path`
+- Capturar al menos: `ResourceNotFoundException` (404), `BusinessException` (400), `AccessDeniedException` (403), `Exception` genérica (500)
+
+---
+
+## LÓGICA DE NEGOCIO CRÍTICA — NO MODIFICAR
+
+### FolioService (reimplementación obligatoria)
+
+El folio es un varchar(20), formato: 6 dígitos con relleno de ceros (ej: `001003`). Inicio: `001000`.
+
+```java
+// La consulta SQL nativa que debe usarse exactamente:
+"SELECT MAX(CAST(folio AS UNSIGNED)) FROM orden WHERE folio REGEXP '^[0-9]+$'"
+
+// El formato de salida:
+String.format("%06d", nuevoNumero)
+
+// Implementar con @Transactional y manejo de concurrencia
+// Bucle de seguridad: máximo 100 intentos
+// Fallback: usar System.currentTimeMillis() % 1_000_000
+```
+
+### ReciboService — Reglas de negocio inamovibles
+
+1. El primer recibo de cualquier orden DEBE ser de tipo `ANTICIPO`
+2. Solo puede haber UN `ANTICIPO` y UN `SALDO` por orden
+3. Los `ABONO`s son ilimitados
+4. Un recibo de tipo `ANTICIPO` es INMUTABLE (no puede cambiar de tipo)
+5. Validación anti-sobrepago: `suma(todos los recibos) + monto_nuevo <= monto_total`
+
+### Cadena de reacción al guardar Recibo (ejecutar en orden):
+
+```
+1. aplicarReglasDeNegocio()    ← Validaciones de tipo de recibo
+2. validarSobrepago()          ← Anti-fraude
+3. repo.save(recibo)           ← Persistencia
+4. actualizarSaldoOrden()      ← saldo_restante = monto_total - SUM(recibos)
+5. actualizarEstadoYFechas()   ← Autómata de fechas y estatus
+```
+
+### Autómata de fechas y estatus (paso 5):
+
+```
+SI (calc_fecha_levantamiento_auto == true)
+    fecha_levantamiento = fecha del recibo ANTICIPO
+
+SI (calc_fecha_entrega_auto == true AND requiere_plano == true)
+    fecha_entrega_plano = fecha_levantamiento + dias_entrega_plano
+
+SI (saldo_restante == 0) → estatus = TERMINADA
+SI NO                    → estatus = ACTIVA
+```
+
+### Cálculo de comisión en Orden:
+
+```java
+// Solo si tiene_comision == true
+BigDecimal monto = monto_total
+    .multiply(porcentaje_comision)
+    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+```
+
+---
+
+## SEGURIDAD — RBAC
+
+### Implementación de Spring Security
+
+- Autenticación: JWT en header `Authorization: Bearer <token>`
+- Expiración del token: 8 horas (configurable en `application.properties`)
+- Los permisos se cargan desde `rol_permiso` → `permiso.nombre` al hacer login
+- Cada permiso se registra como `GrantedAuthority` en Spring Security
+
+### Formato de permisos en BD
+
+```
+ENTIDAD_ACCION
+Ejemplos: CLIENTE_CREATE, CLIENTE_READ, ORDEN_UPDATE, GASTO_DELETE
+```
+
+### Protección de endpoints
+
+```java
+// En cada método del controller:
+@PreAuthorize("hasAuthority('CLIENTE_CREATE')")
+@PostMapping
+public ResponseEntity<ClienteResponse> crear(@RequestBody @Valid ClienteRequest request) { ... }
+
+@PreAuthorize("hasAuthority('CLIENTE_READ')")
+@GetMapping
+public ResponseEntity<List<ClienteResponse>> listar() { ... }
+```
+
+### Habilitar en SecurityConfig
+
+```java
+@EnableMethodSecurity(prePostEnabled = true)
+```
+
+### Los 5 roles y sus capacidades generales
+
+- `ADMINISTRADOR`: CRUD total en todo
+- `SUPERVISOR`: CRUD operativo (clientes, órdenes, ingenieros, recibos). Sin finanzas ni config
+- `OPERADOR`: Solo READ general. CREATE en clientes y recibos únicamente
+- `CONTADOR`: CRUD en gastos y nómina. READ en clientes y órdenes
+- `VENDEDOR`: READ+CREATE en clientes, órdenes y recibos
+
+---
+
+## CORS
+
+Configurar para permitir peticiones desde el frontend React (localhost en dev, dominio Vercel en prod):
+
+```java
+// En CorsConfig.java
+configuration.setAllowedOrigins(Arrays.asList(
+    "http://localhost:5173",  // Vite dev server
+    "https://tu-app.vercel.app"
+));
+configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+configuration.setAllowedHeaders(List.of("*"));
+configuration.setAllowCredentials(true);
+```
+
+---
+
+## REPORTES EXCEL
+
+- Usar **Apache POI** (`XSSFWorkbook` para .xlsx)
+- Los reportes disponibles: ventas, ingresos, gastos diarios, gastos fijos, nómina
+- Todos aceptan filtro de fechas `fechaInicio` y `fechaFin` como parámetros
+- La descarga debe devolver el archivo como `ResponseEntity<byte[]>` con headers:
+
+```java
+HttpHeaders headers = new HttpHeaders();
+headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+headers.setContentDispositionFormData("attachment", "reporte_ventas.xlsx");
+```
+
+---
+
+## SUBIDA DE ARCHIVOS (PLANOS TOPOGRÁFICOS)
+
+- Servicio gratuito: **Cloudinary** (tier gratuito suficiente)
+- El campo `ruta_plano` en `orden` almacenará la URL pública del archivo
+- Endpoint: `POST /api/v1/ordenes/{id}/plano` con `multipart/form-data`
+- El frontend enviará el archivo, el backend lo sube a Cloudinary y guarda la URL
+
+---
+
+## BUENAS PRÁCTICAS GENERALES
+- Documentar código sólo en partes críticas
+- NUNCA exponer entidades JPA directamente en los endpoints (siempre usar DTOs)
+- NUNCA hardcodear credenciales — usar `application.properties` o variables de entorno
+- Los endpoints públicos (sin autenticación): solo `/api/v1/auth/login`
+- Todos los demás endpoints requieren JWT válido + permiso específico
+- Usar `@Valid` en todos los `@RequestBody` y definir validaciones con Bean Validation (`@NotNull`, `@NotBlank`, `@Size`, etc.)
+- Los logs de errores con `@Slf4j` de Lombok: `log.error("mensaje", exception)`
+
+---
+
+## FORMATO DE RESPUESTA ESTÁNDAR
+
+```json
+// Éxito lista
+{
+  "data": [...],
+  "total": 25
+}
+
+// Éxito objeto
+{
+  "data": { ... }
+}
+
+// Error
+{
+  "timestamp": "2024-01-15T10:30:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "El folio ya existe",
+  "path": "/api/v1/ordenes"
+}
+```
+
+---
+
+## LO QUE NO DEBES HACER
+
+- NO usar `@Autowired` en campos (solo inyección por constructor)
+- NO retornar entidades JPA directamente desde controllers
+- NO usar `float` o `double` para valores monetarios
+- NO crear lógica de negocio dentro de los controllers (solo en Services)
+- NO modificar la lógica de cadena de reacción del ReciboService sin avisar
+- NO cambiar la lógica del FolioService sin avisar
+- NO ignorar los campos STORED de `gasto_fijo` — son de solo lectura en Java
