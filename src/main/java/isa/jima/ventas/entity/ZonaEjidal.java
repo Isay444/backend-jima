@@ -1,5 +1,6 @@
 package isa.jima.ventas.entity;
 
+import isa.jima.ventas.validation.anotaciones.Uppercase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,5 +24,6 @@ public class ZonaEjidal {
     private Integer idZonaEjidal;
 
     @Column(nullable = false, length = 100)
+    @Uppercase
     private String nombre;
 }

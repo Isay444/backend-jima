@@ -3,6 +3,7 @@ package isa.jima.ventas.entity;
 import isa.jima.ventas.entity.enums.Referenciado;
 import isa.jima.ventas.entity.enums.TipoCliente;
 
+import isa.jima.ventas.validation.anotaciones.Uppercase;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,24 +24,30 @@ public class Cliente {
     private Integer idClientes;
 
     @Column(name = "nombre_s", length = 100)
+    @Uppercase
     private String nombreS;
 
     @Column(name = "apellido_paterno", length = 50)
+    @Uppercase
     private String apellidoPaterno;
 
     @Column(name = "apellido_materno", length = 50)
+    @Uppercase
     private String apellidoMaterno;
 
     @Column(nullable = false, length = 200)
     private String direccion;
 
     @Column(length = 100)
+    @Uppercase
     private String localidad;
 
     @Column(length = 100)
+    @Uppercase
     private String colonia;
 
     @Column(name = "calle_numero", length = 200)
+    @Uppercase
     private String calleNumero;
 
     @Column(name = "codigo_postal", length = 10)
@@ -65,16 +72,6 @@ public class Cliente {
     @PrePersist
     @PreUpdate
     private void formatearYGenerarDireccion(){
-        //1. Convertir a mayúsculas (excluyendo email y telefono)
-        this.nombreS = toUpperCase(this.nombreS);
-        this.apellidoMaterno = toUpperCase(this.apellidoMaterno);
-        this.apellidoPaterno = toUpperCase(this.apellidoPaterno);
-        this.calleNumero = toUpperCase(this.calleNumero);
-        this.calleNumero = toUpperCase(this.calleNumero);
-        this.colonia = toUpperCase(this.colonia);
-        this.localidad = toUpperCase(this.localidad);
-        this.codigoPostal = toUpperCase(this.codigoPostal);
-
         //2. Generar la direccion concatenada
         StringBuilder direccionaArmada = new StringBuilder();
         agregarParte(direccionaArmada, this.calleNumero);

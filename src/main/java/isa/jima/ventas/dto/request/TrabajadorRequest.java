@@ -2,10 +2,7 @@ package isa.jima.ventas.dto.request;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public record TrabajadorRequest(
         @NotBlank @Size(max = 50) String nombre,
@@ -15,7 +12,7 @@ public record TrabajadorRequest(
         @NotNull Integer idArea,
         @Size(min = 12, max = 13) String rfc,
         @Size(min = 18, max = 18) String curp,
-        @Size(max = 15) String telefono,
+        @Size(max = 15) @Pattern(regexp = "^\\d{10}$", message = "El telefono debe tener 10 digitos") String telefono,
         @Email @Size(max = 100) String email,
         @NotNull LocalDate fechaAlta,
         Boolean activo,

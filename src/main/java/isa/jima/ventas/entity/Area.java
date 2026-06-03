@@ -2,6 +2,7 @@ package isa.jima.ventas.entity;
 
 import java.time.LocalDateTime;
 
+import isa.jima.ventas.validation.anotaciones.Uppercase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -25,6 +26,7 @@ public class Area {
     private Integer idArea;
 
     @Column(nullable = false, unique = true, length = 100)
+    @Uppercase
     private String nombre;
 
     @Column(length = 200)
