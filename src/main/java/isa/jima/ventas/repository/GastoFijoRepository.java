@@ -2,6 +2,7 @@ package isa.jima.ventas.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +38,7 @@ public interface GastoFijoRepository extends JpaRepository<GastoFijo, Integer> {
 
     @Query("SELECT g FROM GastoFijo g WHERE g.mes = :mes AND g.anio = :anio AND g.ahorro > 0 ORDER BY g.ahorro DESC")
     List<GastoFijo> buscarConAhorro(@Param("mes") int mes, @Param("anio") int anio);
+
+    @Override
+    List<GastoFijo> findAll(Sort sort);
 }
