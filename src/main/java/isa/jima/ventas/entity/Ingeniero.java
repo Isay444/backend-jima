@@ -1,12 +1,8 @@
 package isa.jima.ventas.entity;
 
+import isa.jima.ventas.validation.anotaciones.UpperCaseListener;
 import isa.jima.ventas.validation.anotaciones.Uppercase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(UpperCaseListener.class)
 public class Ingeniero {
 
     @Id

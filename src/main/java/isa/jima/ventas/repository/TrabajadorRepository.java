@@ -2,6 +2,8 @@ package isa.jima.ventas.repository;
 
 import java.util.List;
 
+import isa.jima.ventas.entity.GastoDiario;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +16,7 @@ public interface TrabajadorRepository extends JpaRepository<Trabajador, Integer>
 
     List<Trabajador> findByNombreContainingIgnoreCaseOrApellidoPaternoContainingIgnoreCase(
             String nombre, String apellidoPaterno);
+
+    @Override
+    List<Trabajador> findAll(Sort sort);
 }

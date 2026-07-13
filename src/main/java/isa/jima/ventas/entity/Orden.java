@@ -70,7 +70,7 @@ public class Orden {
     @Column(name = "requiere_plano", nullable = false, columnDefinition = "bit(1)")
     private Boolean requierePlano;
 
-    @Column(name = "ruta_plano", length = 255)
+    @Column(name = "ruta_plano")
     private String rutaPlano;
 
     @Column(length = 100)

@@ -3,6 +3,7 @@ package isa.jima.ventas.entity;
 import isa.jima.ventas.entity.enums.Referenciado;
 import isa.jima.ventas.entity.enums.TipoCliente;
 
+import isa.jima.ventas.validation.anotaciones.UpperCaseListener;
 import isa.jima.ventas.validation.anotaciones.Uppercase;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(UpperCaseListener.class)
 public class Cliente {
 
     @Id

@@ -3,15 +3,9 @@ package isa.jima.ventas.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import isa.jima.ventas.validation.anotaciones.UpperCaseListener;
+import isa.jima.ventas.validation.anotaciones.Uppercase;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,6 +17,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(UpperCaseListener.class)
 public class Trabajador {
 
     @Id
@@ -31,12 +26,15 @@ public class Trabajador {
     private Integer idTrabajador;
 
     @Column(nullable = false, length = 50)
+    @Uppercase
     private String nombre;
 
     @Column(name = "apellido_paterno", nullable = false, length = 50)
+    @Uppercase
     private String apellidoPaterno;
 
     @Column(name = "apellido_materno", length = 50)
+    @Uppercase
     private String apellidoMaterno;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,6 +49,7 @@ public class Trabajador {
     private String rfc;
 
     @Column(length = 18)
+    @Uppercase
     private String curp;
 
     @Column(length = 15)

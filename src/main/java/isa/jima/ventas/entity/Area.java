@@ -2,7 +2,9 @@ package isa.jima.ventas.entity;
 
 import java.time.LocalDateTime;
 
+import isa.jima.ventas.validation.anotaciones.UpperCaseListener;
 import isa.jima.ventas.validation.anotaciones.Uppercase;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -18,6 +20,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(UpperCaseListener.class)
 public class Area {
 
     @Id
