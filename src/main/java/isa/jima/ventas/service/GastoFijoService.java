@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -37,7 +38,8 @@ public class GastoFijoService {
 
     @Transactional(readOnly = true)
     public List<GastoFijoResponse> listar() {
-        return gastoFijoRepository.findAll().stream()
+        Sort sortByRecent = Sort.by(Sort.Direction.DESC, "idGastoFijo");
+        return gastoFijoRepository.findAll(sortByRecent).stream()
                 .map(this::toResponse)
                 .toList();
     }

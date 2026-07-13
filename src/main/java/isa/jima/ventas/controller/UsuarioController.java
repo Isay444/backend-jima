@@ -68,8 +68,10 @@ public class UsuarioController {
 
     @PatchMapping("/{id}/activar-desactivar")
     @PreAuthorize("hasAuthority('USUARIO_UPDATE')")
-    public ResponseEntity<UsuarioResponse> activarDesactivar(@PathVariable Integer id) {
-        return ResponseEntity.ok(usuarioService.activarDesactivar(id));
+    public ResponseEntity<UsuarioResponse> activarDesactivar(
+            @PathVariable Integer id,
+            @RequestParam Integer idUsuarioActual) {
+        return ResponseEntity.ok(usuarioService.activarDesactivar(id, idUsuarioActual));
     }
 
     @DeleteMapping("/{id}")

@@ -3,6 +3,7 @@ package isa.jima.ventas.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,8 @@ public class GastoDiarioService {
 
     @Transactional(readOnly = true)
     public List<GastoDiarioResponse> listar() {
-        return gastoDiariosRepository.findAll().stream()
+        Sort sortByRecent = Sort.by(Sort.Direction.DESC, "idGasto");
+        return gastoDiariosRepository.findAll(sortByRecent).stream()
                 .map(this::toResponse)
                 .toList();
     }

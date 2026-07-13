@@ -2,6 +2,9 @@ package isa.jima.ventas.service;
 
 import java.util.List;
 
+import isa.jima.ventas.entity.ZonaEjidal;
+import isa.jima.ventas.repository.ZonaEjidalRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +24,12 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final MunicipioRepository municipioRepository;
+    private final ZonaEjidalRepository zonaEjidalRepository;
 
     @Transactional(readOnly = true)
     public List<ClienteResponse> listar() {
-        return clienteRepository.findAll().stream()
+        Sort sortByNombre = Sort.by(Sort.Direction.ASC, "nombreS");
+        return clienteRepository.findAll(sortByNombre).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -88,6 +93,22 @@ public class ClienteService {
         cliente.setApellidoPaterno(request.apellidoPaterno());
         cliente.setApellidoMaterno(request.apellidoMaterno());
         // cliente.setDireccion(request.direccion());
+        if (request.localidad() != null && request.localidad().trim().isEmpty()){
+            String nombreLocalidad = request.localidad().trim().toUpperCase();
+
+            ZonaEjidal zona = zonaEjidalRepository.findByNombre(nombreLocalidad)
+                    .orElseGet(() -> {
+                        // Si no existe, la creamos al vuelo
+                        ZonaEjidal nuevaZona = new ZonaEjidal();
+                        nuevaZona.setNombre(nombreLocalidad);
+                        return zonaEjidalRepository.save(nuevaZona);
+                    });
+
+            // le asignamos al cliente el nombre exacto que quedó en la BD (evita duplicados por acentos o espacios)
+            cliente.setLocalidad(zona.getNombre());
+        }else {
+            cliente.setLocalidad(null);
+        }
         cliente.setLocalidad(request.localidad());
         cliente.setColonia(request.colonia());
         cliente.setCalleNumero(request.calleNumero());

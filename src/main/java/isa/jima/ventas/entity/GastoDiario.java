@@ -7,17 +7,9 @@ import java.time.LocalDateTime;
 import isa.jima.ventas.entity.enums.CategoriaGasto;
 import isa.jima.ventas.entity.enums.MetodoPagoGasto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import isa.jima.ventas.validation.anotaciones.UpperCaseListener;
+import isa.jima.ventas.validation.anotaciones.Uppercase;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +21,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(UpperCaseListener.class)
 public class GastoDiario {
 
     @Id
@@ -40,6 +33,7 @@ public class GastoDiario {
     private LocalDate fecha;
 
     @Column(nullable = false, length = 100)
+    @Uppercase
     private String descripcion;
 
     @Column(name = "es_materia_prima", nullable = false)

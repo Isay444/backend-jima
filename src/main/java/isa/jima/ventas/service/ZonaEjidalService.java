@@ -2,6 +2,7 @@ package isa.jima.ventas.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +22,8 @@ public class ZonaEjidalService {
 
     @Transactional(readOnly = true)
     public List<ZonaEjidalResponse> listar() {
-        return zonaEjidalRepository.findAll().stream()
+        Sort sortByNombre = Sort.by(Sort.Direction.ASC, "nombre");
+        return zonaEjidalRepository.findAll(sortByNombre).stream()
                 .map(this::toResponse)
                 .toList();
     }

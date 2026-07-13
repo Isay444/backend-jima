@@ -79,7 +79,11 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public UsuarioResponse activarDesactivar(Integer id) {
+    public UsuarioResponse activarDesactivar(Integer id, Integer idUsuarioActual) {
+        if (id.equals(idUsuarioActual)){
+            throw new BusinessException("No puedes desactivar tu propio usuario");
+        }
+
         Usuario usuario = buscarPorId(id);
         if (Boolean.TRUE.equals(usuario.getActivo())
                 && ROL_ADMINISTRADOR.equalsIgnoreCase(usuario.getRol().getNombre())) {
