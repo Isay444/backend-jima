@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -41,7 +42,8 @@ public class TrabajadorService {
 
     @Transactional(readOnly = true)
     public List<TrabajadorResponse> listar() {
-        return trabajadorRepository.findAll().stream()
+        Sort sortByNombre = Sort.by(Sort.Direction.ASC, "nombre");
+        return trabajadorRepository.findAll(sortByNombre).stream()
                 .map(this::toResponse)
                 .toList();
     }
